@@ -1,11 +1,13 @@
 import React, { Component } from 'react'
 import {Map,InfoWindow,Marker,GoogleApiWrapper} from 'google-maps-react'
-import { elastic as Menu} from 'react-burger-menu'
+
 import logo from './logo.svg';
-import RollerCoaster from './RollerCoaster.svg'
+import escapeRegExp from 'escape-string-regexp'
 import SearchWithinTime from './SearchTime'
+import SideNav from './SideNavigation'
 import home from './home.svg';
 import './App.css';
+import './InfoWindow.css'
 class App extends Component {
   state = {
 
@@ -13,14 +15,44 @@ class App extends Component {
        lng:-79.337021,
        ShowInfoWindow:true,
        targetMarker:{},
+       targetMarkerId:null,
+       targetMarkerInfo:{},
       activeMarker: [],
-      temp:[]
+      UnfilteredMarker:[],
+      temp:[],
+      query:''
     };
 
 componentDidMount(){
    this.getData();
 }
 
+QueryUpdate=(query)=>{
+
+ this.setState({query});
+  if(query==''){
+    console.log('Empty');
+  }
+ if(this.state.query){
+
+   if(query==''){
+     console.log(query)
+     this.setState({
+       activeMarker:this.state.UnfilteredMarker
+     })
+   }
+   else{
+   const match=new RegExp(escapeRegExp(this.state.query),'i')
+
+
+   this.setState((state) => {
+    return {activeMarker:state.UnfilteredMarker.filter((contact)=>match.test(contact.venue.name))};
+  });
+ }
+}
+}
+
+//LocationLookUp looks up user location
 LocationLookUp=(origin,ref)=>{
   var geocoder=new this.props.google.maps.Geocoder();
    geocoder.geocode({address:origin},function(res,stat){
@@ -88,7 +120,7 @@ var ref=this;
           for(var i=0;i<UnfilteredDest.length;i++){
              if(result[i].status=='OK'){
                var duration=result[i].duration.value/60;
-               console.log(duration);
+
 
                if(duration<=maxDuration){
                  data[acc]=UnfilteredDest[i];
@@ -98,9 +130,11 @@ var ref=this;
              }
 
           }
+          console.log(data);
 
           ref.setState({
-            activeMarker:data
+            activeMarker:data,
+            UnfilteredMarker:data,
           })
 
        }
@@ -109,6 +143,25 @@ var ref=this;
 
 }
 
+getMarkerInformation=()=>{
+  console.log(this.state.targetMarkerId);
+  var id=this.state.targetMarkerId;
+
+  fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
+
+    method:"GET",
+    dataType:"JSON"
+  }).then((resp)=>{
+     return resp.json()
+  }).then((data)=>{
+
+   this.setState({
+     targetMarkerInfo:data.response.venue
+   })
+  }).catch((error)=>{
+    console.log('Error')
+  })
+}
 
 getData=()=>{
 
@@ -116,7 +169,9 @@ getData=()=>{
   if(!origin){
     origin='Markham,Ontario';
   }
-  fetch('https://api.foursquare.com/v2/venues/explore?client_id=QALO2MLFP24PDJJ5VK3VYOYXIKO2RS3NV2FNQMPS3OOSJHHG&client_secret=TGQZJJ30WI44XGBLMQ0B5L4NH4VYBMVV3GM32HJCQOWJTGWJ&v=20180323&limit=10&near='+origin+'&query=fun+Amusement+park',{
+
+
+  fetch('https://api.foursquare.com/v2/venues/explore?client_id=QALO2MLFP24PDJJ5VK3VYOYXIKO2RS3NV2FNQMPS3OOSJHHG&client_secret=TGQZJJ30WI44XGBLMQ0B5L4NH4VYBMVV3GM32HJCQOWJTGWJ&v=20180323&limit=20&near='+origin+'&query=Amusement+park',{
  method:"GET",
  dataType:"JSON"
 }).then((resp)=>{
@@ -133,29 +188,76 @@ getData=()=>{
 }).catch((error)=>{
  console.log('Error! '+error);
 })
+
 }
 
 ShowInfoWindow=(props,marker,e)=>{
- console.log(marker);
+
+  //For an individual infowindow, we need
+  //1. Its name (Good)
+  //2. Its rating (check required)
+  //3. Its contact information (Check required)
+  //4. Address (good)
+  //Make one more API call on clicked marker
+
+
+  var Active=this.state.activeMarker;
+
+  var info={};
+ for(var i=0;i<Active.length;i++){
+   if(marker.name==Active[i].venue.name){
+     info=Active[i];
+   }
+ }
+
+
+this.setState({
+  targetMarkerId:info.venue.id
+})
  this.setState({
    targetMarker:marker
  })
+ this.getMarkerInformation();
 }
 
 DisplayMarkers=()=>{
 
   var ListOfMarkers=[<Marker key={'home'} icon={home}position={{lat:this.state.lat,lng:this.state.lng}}/>];
    var active=this.state.activeMarker;
-    console.log(active);
+
     for(var i=0;i<active.length;i++){
       ListOfMarkers.push(<Marker onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
     }
-    console.log(ListOfMarkers);
+
   return(
     ListOfMarkers
   )
 }
 
+DisplayContact=()=>{
+  if(this.state.targetMarkerId){
+
+    var contact=this.state.targetMarkerInfo.contact;
+
+    var retval=[];
+    for(let key in contact){
+
+      var value=contact[key];
+      retval.push({key,value});
+
+    }
+
+    return(
+     <table>
+
+
+       {retval.map((contact)=><tr key={contact.key}><td>{contact.key}</td><td>{contact.value}</td></tr>)}
+
+
+     </table>
+    )
+  }
+}
 
 
 
@@ -171,22 +273,9 @@ DisplayMarkers=()=>{
    var searchAutoComplete=new this.props.google.maps.places.Autocomplete(document.getElementById('init-Location'));
     return (
       <div className="App">
-        <Menu>
-          <h3>Find your ride</h3>
-        <input type="text" className="filter" placeholder="Ex:6 flags"/>
-         <hr/>
 
+     <SideNav update={this.QueryUpdate} locations={this.state.activeMarker}/>
 
-       <div className="container" height="10"> <span><img src={RollerCoaster} className="place-icon" alt="locations"/><span className="locations"> 21 lindisfarne Way </span></span>
-
-         </div>
-      <div className="space"></div>
-
-    <div className="container" height="10"> <span><img  className="place-icon" src={RollerCoaster}  alt="locations"/><span className="locations"> 21 lindisfarne Way </span></span>
-
-        </div>
-     <div className="space"></div>
-        </Menu>
         <header className="App-header">
 
           <span><span className="credit">Powered By React.js</span><img src={logo} className="App-logo" alt="logo" /></span>
@@ -204,9 +293,12 @@ DisplayMarkers=()=>{
 
        {this.DisplayMarkers()}
 
-      <InfoWindow  marker={this.state.targetMarker}  visible={this.state.ShowInfoWindow}>
+      <InfoWindow   marker={this.state.targetMarker}  visible={true}>
    <div>
-     <h1>Hi</h1>
+
+    <h1> {this.state.targetMarker.name} </h1>
+  <h2>{'rating '+this.state.targetMarkerInfo.rating}</h2>
+{this.DisplayContact()}
    </div>
 
       </InfoWindow>
