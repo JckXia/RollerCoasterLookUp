@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import {Map,InfoWindow,Marker,GoogleApiWrapper} from 'google-maps-react'
-
+import * as util from 'util' // has no default export
+import { inspect } from 'util' // or directly
 import logo from './logo.svg';
 import escapeRegExp from 'escape-string-regexp'
 import SearchWithinTime from './SearchTime'
@@ -9,6 +10,8 @@ import home from './home.svg';
 import './App.css';
 import './InfoWindow.css'
 var ListOfInfoWindow=[];
+var Mark=[];
+var utils = require('util')
 class App extends Component {
 
   state = {
@@ -21,6 +24,7 @@ class App extends Component {
       activeMarker: [],
       UnfilteredMarker:[],
       NavMarker:[],
+      animation:1,
       temp:[],
       query:''
     };
@@ -38,9 +42,8 @@ selectMarker=(e)=>{
       break;
     }
   }
-  console.log(targetMarker.name);
- console.log(this.props.google.maps);
 
+targetMarker.setAnimation(1);
  this.setState({
    targetMarker:targetMarker
  })
@@ -71,6 +74,7 @@ selectMarker=(e)=>{
  }).catch((error)=>{
    console.log('Error')
  })
+
 }
 
 QueryUpdate=(query)=>{
@@ -271,7 +275,7 @@ this.setState({
    if(marker){
      ListOfInfoWindow.push(marker.marker);
    }
-  
+
   //ListOfInfoWindow.push(marker.marker);
 }
 
@@ -279,10 +283,18 @@ DisplayMarkers=()=>{
 
   var ListOfMarkers=[<Marker key={'home'} icon={home}position={{lat:this.state.lat,lng:this.state.lng}}/>];
    var active=this.state.activeMarker;
-
+  console.log(this.state.targetMarker.name);
+  var target=this.state.targetMarker.name;
+  var flag=0;
     for(var i=0;i<active.length;i++){
-      ListOfMarkers.push(<Marker  ref={this.GetMarkerObjects} onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
+      if(target==active[i].venue.name){
+        console.log('Check');
+        flag=1;
+      }
+      ListOfMarkers.push(<Marker  animation={this.state.animation&&flag} ref={this.GetMarkerObjects} onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
+      flag=0;
     }
+    Mark=ListOfMarkers;
 
 
   return(
