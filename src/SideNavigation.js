@@ -2,9 +2,7 @@ import React from 'react'
 import { stack as Menu} from 'react-burger-menu'
 import './SideNavigation.css'
 class SideNav extends React.Component{
- click=(e)=>{
-  console.log(e.target.innerText);
- }
+ 
   render(){
       return(
         <Menu>
@@ -14,7 +12,7 @@ class SideNav extends React.Component{
 
        {this.props.locations&&this.props.locations.map((location)=><span key={location.venue.id}>
 
-         <a onClick={(e)=>this.click(e)}> <span className="location">{location.venue.name}</span></a>
+         <a onClick={(e)=>this.props.selection(e)}> <span className="location">{location.venue.name}</span></a>
      <div className="space"></div></span>)}
 
 

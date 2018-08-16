@@ -8,17 +8,19 @@ import SideNav from './SideNavigation'
 import home from './home.svg';
 import './App.css';
 import './InfoWindow.css'
+var ListOfInfoWindow=[];
 class App extends Component {
+
   state = {
 
        lat:  43.856098,
        lng:-79.337021,
-       ShowInfoWindow:true,
        targetMarker:{},
        targetMarkerId:null,
        targetMarkerInfo:{},
       activeMarker: [],
       UnfilteredMarker:[],
+      NavMarker:[],
       temp:[],
       query:''
     };
@@ -27,16 +29,60 @@ componentDidMount(){
    this.getData();
 }
 
+selectMarker=(e)=>{
+  var targetMarker={};
+    var place=e.target.innerText;
+  for(var i=0;i<ListOfInfoWindow.length;i++){
+    if(place==ListOfInfoWindow[i].name){
+      targetMarker=ListOfInfoWindow[i];
+      break;
+    }
+  }
+  console.log(targetMarker.name);
+ console.log(this.props.google.maps);
+
+ this.setState({
+   targetMarker:targetMarker
+ })
+ var active=this.state.activeMarker;
+ for(var i=0;i<active.length;i++){
+
+  if(active[i].venue.name==targetMarker.name){
+    var id=active[i].venue.id;
+    break;
+  }
+ }
+ this.setState({
+   targetMarkerId:id
+ })
+
+ console.log(id);
+ fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
+
+   method:"GET",
+   dataType:"JSON"
+ }).then((resp)=>{
+    return resp.json()
+ }).then((data)=>{
+
+  this.setState({
+    targetMarkerInfo:data.response.venue
+  })
+ }).catch((error)=>{
+   console.log('Error')
+ })
+}
+
 QueryUpdate=(query)=>{
 
  this.setState({query});
   if(query==''){
-    console.log('Empty');
+
   }
  if(this.state.query){
 
    if(query==''){
-     console.log(query)
+
      this.setState({
        activeMarker:this.state.UnfilteredMarker
      })
@@ -130,7 +176,7 @@ var ref=this;
              }
 
           }
-          console.log(data);
+
 
           ref.setState({
             activeMarker:data,
@@ -217,7 +263,16 @@ this.setState({
  this.setState({
    targetMarker:marker
  })
+ console.log(marker);
  this.getMarkerInformation();
+}
+
+ GetMarkerObjects=(marker)=>{
+   if(marker){
+     ListOfInfoWindow.push(marker.marker);
+   }
+  
+  //ListOfInfoWindow.push(marker.marker);
 }
 
 DisplayMarkers=()=>{
@@ -226,8 +281,9 @@ DisplayMarkers=()=>{
    var active=this.state.activeMarker;
 
     for(var i=0;i<active.length;i++){
-      ListOfMarkers.push(<Marker onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
+      ListOfMarkers.push(<Marker  ref={this.GetMarkerObjects} onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
     }
+
 
   return(
     ListOfMarkers
@@ -274,7 +330,7 @@ DisplayContact=()=>{
     return (
       <div className="App">
 
-     <SideNav update={this.QueryUpdate} locations={this.state.activeMarker}/>
+     <SideNav selection={(e)=>this.selectMarker(e)}   update={this.QueryUpdate} locations={this.state.activeMarker}/>
 
         <header className="App-header">
 
@@ -293,11 +349,13 @@ DisplayContact=()=>{
 
        {this.DisplayMarkers()}
 
+
       <InfoWindow   marker={this.state.targetMarker}  visible={true}>
    <div>
 
     <h1> {this.state.targetMarker.name} </h1>
   <h2>{'rating '+this.state.targetMarkerInfo.rating}</h2>
+<h3>{'Description '+this.state.targetMarkerInfo.description}</h3>
 {this.DisplayContact()}
    </div>
 
