@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import {Map,InfoWindow,Marker,GoogleApiWrapper} from 'google-maps-react'
-import * as util from 'util' // has no default export
-import { inspect } from 'util' // or directly
+
+
 import logo from './logo.svg';
 import escapeRegExp from 'escape-string-regexp'
 import SearchWithinTime from './SearchTime'
@@ -11,20 +11,23 @@ import './App.css';
 import './InfoWindow.css'
 var ListOfInfoWindow=[];
 var Mark=[];
-var utils = require('util')
+
 class App extends Component {
 
   state = {
 
+        //Center of the map
        lat:  43.856098,
        lng:-79.337021,
+
+       //The marker that is being selected
        targetMarker:{},
        targetMarkerId:null,
        targetMarkerInfo:{},
-      activeMarker: [],
-      UnfilteredMarker:[],
-      NavMarker:[],
-      animation:1,
+
+       //Live locations,displays markers being displayed on the map as well as on the side menu
+      activeLocation: [],
+      UnfilteredLocation:[],
       temp:[],
       query:''
     };
@@ -33,6 +36,29 @@ componentDidMount(){
    this.getData();
 }
 
+
+setTargetMarker=(marker,id)=>{
+  this.setState({
+    targetMarker:marker
+  })
+  this.setState({
+    targetMarkerId:id
+  })
+  fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
+
+    method:"GET",
+    dataType:"JSON"
+  }).then((resp)=>{
+     return resp.json()
+  }).then((data)=>{
+   
+   this.setState({
+     targetMarkerInfo:data.response.venue
+   })
+  }).catch((error)=>{
+    console.log('Error')
+  })
+}
 selectMarker=(e)=>{
   var targetMarker={};
     var place=e.target.innerText;
@@ -43,52 +69,33 @@ selectMarker=(e)=>{
     }
   }
 
-targetMarker.setAnimation(1);
- this.setState({
-   targetMarker:targetMarker
- })
- var active=this.state.activeMarker;
+
+
+ var active=this.state.activeLocation;
  for(var i=0;i<active.length;i++){
 
   if(active[i].venue.name==targetMarker.name){
     var id=active[i].venue.id;
+    var info=active[i];
     break;
   }
- }
- this.setState({
-   targetMarkerId:id
- })
 
- console.log(id);
- fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
+}
 
-   method:"GET",
-   dataType:"JSON"
- }).then((resp)=>{
-    return resp.json()
- }).then((data)=>{
-
-  this.setState({
-    targetMarkerInfo:data.response.venue
-  })
- }).catch((error)=>{
-   console.log('Error')
- })
+this.setTargetMarker(targetMarker,id);
 
 }
 
 QueryUpdate=(query)=>{
 
  this.setState({query});
-  if(query==''){
 
-  }
  if(this.state.query){
 
    if(query==''){
 
      this.setState({
-       activeMarker:this.state.UnfilteredMarker
+       activeLocation:this.state.UnfilteredLocation
      })
    }
    else{
@@ -96,10 +103,47 @@ QueryUpdate=(query)=>{
 
 
    this.setState((state) => {
-    return {activeMarker:state.UnfilteredMarker.filter((contact)=>match.test(contact.venue.name))};
+    return {activeLocation:state.UnfilteredLocation.filter((contact)=>match.setTargetMarker(contact.venue.name))};
   });
  }
 }
+}
+
+
+
+
+
+
+
+
+
+/* getData and searchTime are both functions used to process the input by the user in the beginning, in the header file */
+getData=()=>{
+
+  var origin=document.getElementById('init-Location').value;
+  if(!origin){
+    origin='Markham,Ontario';
+  }
+
+
+  fetch('https://api.foursquare.com/v2/venues/explore?client_id=QALO2MLFP24PDJJ5VK3VYOYXIKO2RS3NV2FNQMPS3OOSJHHG&client_secret=TGQZJJ30WI44XGBLMQ0B5L4NH4VYBMVV3GM32HJCQOWJTGWJ&v=20180323&limit=20&near='+origin+'&query=Amusement+park',{
+ method:"GET",
+ dataType:"JSON"
+}).then((resp)=>{
+  return resp.json()
+}).then((data)=>{
+
+  if(!data.response.totalResults){
+    alert('Whoops, nothing found!');
+  }else{
+
+ this.setState({temp:data.response.groups[0].items});
+  this.searchTime(origin);
+}
+}).catch((error)=>{
+ console.log('Error! '+error);
+})
+
 }
 
 //LocationLookUp looks up user location
@@ -121,12 +165,9 @@ LocationLookUp=(origin,ref)=>{
    });
 }
 
+searchTime=(origin)=>{
 
-searchWithinTime=(origin)=>{
-
-
-  //setState took effect imediatly
-  //Here, we refoucs the center of the map to wherever we are searching
+//this.LocationLookUp sets the center of the map
 this.LocationLookUp(origin,this);
 
    //Get the 'distanceMatrixService' from the google API
@@ -135,7 +176,7 @@ this.LocationLookUp(origin,this);
  //Intialize diestination array to store the amusment parks
    var destinations=[];
 
-  //Since the current activeMarker stores all locations of amusment parks given nearby location
+  //Since the current activeLocation stores all locations of amusment parks given nearby location
  // We will filter it further with the DistanceMatrixService
 
   var UnfilteredDest=this.state.temp;
@@ -161,20 +202,21 @@ var ref=this;
        if(stat!=='OK'){
          alert('Error!'+stat);
        }else{
-         //console.log(res);
+
          var address=res.destinationAddresses;
          var result=res.rows["0"].elements;
+         //Marker location information
         var data=[];
-        //  console.log(result);
         var acc=0;
           for(var i=0;i<UnfilteredDest.length;i++){
              if(result[i].status=='OK'){
                var duration=result[i].duration.value/60;
 
-
+               //If the time is less than maxium Duration,
                if(duration<=maxDuration){
                  data[acc]=UnfilteredDest[i];
-
+                 //Set the travel time property for the location
+                data[acc].travelTime=Math.round(duration);
                  acc++;
                }
              }
@@ -183,8 +225,8 @@ var ref=this;
 
 
           ref.setState({
-            activeMarker:data,
-            UnfilteredMarker:data,
+            activeLocation:data,
+            UnfilteredLocation:data,
           })
 
        }
@@ -193,8 +235,35 @@ var ref=this;
 
 }
 
+
+
+ShowInfoWindow=(props,marker,e)=>{
+
+  //For an individual infowindow, we need
+  //1. Its name (Good)
+  //2. Its rating (check required)
+  //3. Its contact information (Check required)
+  //4. Address (good)
+  //Make one more API call on clicked marker
+
+
+  var Active=this.state.activeLocation;
+  var info={};
+ for(var i=0;i<Active.length;i++){
+   if(marker.name==Active[i].venue.name){
+     info=Active[i];
+   }
+ }
+
+
+
+ this.setTargetMarker(marker,info.venue.id);
+}
+
+
+
 getMarkerInformation=()=>{
-  console.log(this.state.targetMarkerId);
+
   var id=this.state.targetMarkerId;
 
   fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
@@ -213,63 +282,6 @@ getMarkerInformation=()=>{
   })
 }
 
-getData=()=>{
-
-  var origin=document.getElementById('init-Location').value;
-  if(!origin){
-    origin='Markham,Ontario';
-  }
-
-
-  fetch('https://api.foursquare.com/v2/venues/explore?client_id=QALO2MLFP24PDJJ5VK3VYOYXIKO2RS3NV2FNQMPS3OOSJHHG&client_secret=TGQZJJ30WI44XGBLMQ0B5L4NH4VYBMVV3GM32HJCQOWJTGWJ&v=20180323&limit=20&near='+origin+'&query=Amusement+park',{
- method:"GET",
- dataType:"JSON"
-}).then((resp)=>{
-  return resp.json()
-}).then((data)=>{
-
-  if(!data.response.totalResults){
-    alert('Whoops, nothing found!');
-  }else{
-    //console.log(data.response.groups[0].items);
- this.setState({temp:data.response.groups[0].items});
-  this.searchWithinTime(origin);
-}
-}).catch((error)=>{
- console.log('Error! '+error);
-})
-
-}
-
-ShowInfoWindow=(props,marker,e)=>{
-
-  //For an individual infowindow, we need
-  //1. Its name (Good)
-  //2. Its rating (check required)
-  //3. Its contact information (Check required)
-  //4. Address (good)
-  //Make one more API call on clicked marker
-
-
-  var Active=this.state.activeMarker;
-
-  var info={};
- for(var i=0;i<Active.length;i++){
-   if(marker.name==Active[i].venue.name){
-     info=Active[i];
-   }
- }
-
-
-this.setState({
-  targetMarkerId:info.venue.id
-})
- this.setState({
-   targetMarker:marker
- })
- console.log(marker);
- this.getMarkerInformation();
-}
 
  GetMarkerObjects=(marker)=>{
    if(marker){
@@ -282,16 +294,16 @@ this.setState({
 DisplayMarkers=()=>{
 
   var ListOfMarkers=[<Marker key={'home'} icon={home}position={{lat:this.state.lat,lng:this.state.lng}}/>];
-   var active=this.state.activeMarker;
-  console.log(this.state.targetMarker.name);
+   var active=this.state.activeLocation;
+
   var target=this.state.targetMarker.name;
   var flag=0;
     for(var i=0;i<active.length;i++){
       if(target==active[i].venue.name){
-        console.log('Check');
+
         flag=1;
       }
-      ListOfMarkers.push(<Marker  animation={this.state.animation&&flag} ref={this.GetMarkerObjects} onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
+      ListOfMarkers.push(<Marker  animation={this.props.google.maps.Animation.BOUNCE&&flag} ref={this.GetMarkerObjects} onClick={this.ShowInfoWindow} key={active[i].referralId} name={active[i].venue.name}  position={{lat:active[i].venue.location.lat,lng:active[i].venue.location.lng}}/>);
       flag=0;
     }
     Mark=ListOfMarkers;
@@ -330,26 +342,27 @@ DisplayContact=()=>{
 
 
 
+// Main rednering
   render() {
-    var points=[
-      {lat:42.02,lng:-77.01},
-      {lat:42.03,lng:-77.02},
-      {lat:41.03,lng:-77.04},
-      {lat:42.05,lng:-77.02}
-    ];
+
 
    var searchAutoComplete=new this.props.google.maps.places.Autocomplete(document.getElementById('init-Location'));
     return (
       <div className="App">
 
-     <SideNav selection={(e)=>this.selectMarker(e)}   update={this.QueryUpdate} locations={this.state.activeMarker}/>
 
+     {/* Side Navigation component */}
+     <SideNav selection={(e)=>this.selectMarker(e)}   update={this.QueryUpdate} locations={this.state.activeLocation}/>
+
+
+   {/* Header portion, where search bars is located */}
         <header className="App-header">
 
           <span><span className="credit">Powered By React.js</span><img src={logo} className="App-logo" alt="logo" /></span>
         <h1 className="App-title">Find your ride!</h1>
       <SearchWithinTime Search={this.getData} />
         </header>
+
         <Map google={this.props.google}
             center={{
           lat:this.state.lat,
@@ -362,18 +375,17 @@ DisplayContact=()=>{
        {this.DisplayMarkers()}
 
 
+     {/* Large InfoWindow which displays information about marker, on update of targetMarker */}
       <InfoWindow   marker={this.state.targetMarker}  visible={true}>
    <div>
 
     <h1> {this.state.targetMarker.name} </h1>
-  <h2>{'rating '+this.state.targetMarkerInfo.rating}</h2>
-<h3>{'Description '+this.state.targetMarkerInfo.description}</h3>
+  <h2>{this.state.targetMarkerInfo&&'rating '+this.state.targetMarkerInfo.rating}</h2>
+<h3>{this.state.targetMarkerInfo&&'Description '+this.state.targetMarkerInfo.description}</h3>
 {this.DisplayContact()}
    </div>
 
       </InfoWindow>
-
-
 
         </Map>
 
@@ -382,7 +394,7 @@ DisplayContact=()=>{
   }
 }
 
-
+//Google maps api creditationals
 export default GoogleApiWrapper({
   apiKey: ("AIzaSyBNkc1Jx7eWA-9Q8ewT5CzVYSyeP5gdyK8")
 })(App)
