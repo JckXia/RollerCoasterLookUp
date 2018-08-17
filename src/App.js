@@ -169,6 +169,7 @@ getData=()=>{
 
 //LocationLookUp looks up user location
 LocationLookUp=(origin,ref)=>{
+  InfoWindowVis=false;
   var geocoder=new this.props.google.maps.Geocoder();
    geocoder.geocode({address:origin},function(res,stat){
        if(stat=='OK'){
@@ -322,12 +323,22 @@ DisplayMarkers=()=>{
 }
 
 DisplayContact=()=>{
+
   if(this.state.targetMarkerId){
 
     if(this.state.targetMarkerInfo){
     var contact=this.state.targetMarkerInfo.contact;
-
+    var active=this.state.activeLocation;
+    var target=this.state.targetMarker;
+    var travelTime;
+     for(var i=0;i<active.length;i++){
+        if(active[i].venue.name==target.name){
+          console.log(active[i]);
+          travelTime=active[i].travelTime;
+        }
+     }
     var retval=[];
+
     for(let key in contact){
 
       var value=contact[key];
@@ -335,7 +346,15 @@ DisplayContact=()=>{
 
     }
 
+
     return(
+      <div>
+
+        <h1> {this.state.targetMarker&&this.state.targetMarker.name} </h1>
+      <span> <h2>rating:   {this.state.targetMarker&&this.state.targetMarkerInfo&&this.state.targetMarkerInfo.rating}</h2> </span>
+    <h3>{this.state.targetMarker&&this.state.targetMarkerInfo&&this.state.targetMarkerInfo.description}</h3>
+  <h3>ETA: {travelTime+' '} minutes</h3>
+  <h3 >Contact</h3>
      <table>
 
 
@@ -343,6 +362,7 @@ DisplayContact=()=>{
 
 
      </table>
+   </div>
     )
   }
 }
@@ -388,9 +408,6 @@ DisplayContact=()=>{
       <InfoWindow   marker={this.state.targetMarker}  visible={InfoWindowVis}>
    <div>
 
-    <h1> {this.state.targetMarker&&this.state.targetMarker.name} </h1>
-  <h2>{this.state.targetMarker&&this.state.targetMarkerInfo&&'rating '+this.state.targetMarkerInfo.rating}</h2>
-<h3>{this.state.targetMarker&&this.state.targetMarkerInfo&&'Description '+this.state.targetMarkerInfo.description}</h3>
 {this.state.targetMarker&&this.DisplayContact()}
    </div>
 
