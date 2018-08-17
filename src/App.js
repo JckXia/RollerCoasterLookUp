@@ -11,10 +11,11 @@ import './App.css';
 import './InfoWindow.css'
 var ListOfInfoWindow=[];
 var Mark=[];
-
+var InfoWindowVis=true;
 class App extends Component {
 
   state = {
+        //InfoWindow visibility
 
         //Center of the map
        lat:  43.856098,
@@ -51,7 +52,7 @@ setTargetMarker=(marker,id)=>{
   }).then((resp)=>{
      return resp.json()
   }).then((data)=>{
-   
+
    this.setState({
      targetMarkerInfo:data.response.venue
    })
@@ -60,6 +61,7 @@ setTargetMarker=(marker,id)=>{
   })
 }
 selectMarker=(e)=>{
+  InfoWindowVis=true;
   var targetMarker={};
     var place=e.target.innerText;
   for(var i=0;i<ListOfInfoWindow.length;i++){
@@ -100,10 +102,29 @@ QueryUpdate=(query)=>{
    }
    else{
    const match=new RegExp(escapeRegExp(this.state.query),'i')
+    var retval=this.state.UnfilteredLocation.filter((contact)=>match.test(contact.venue.name));
+    var targetLocation=null;
+   if(this.state.targetMarker){
+       targetLocation=this.state.targetMarker.name;
+   }
+    var exist=0;
+    for(var i=0;i<retval.length;i++){
+       if(retval[i].venue.name==targetLocation){
+         console.log('Good');
+         exist=1;
+       }
+    }
+    if(!exist){
+      InfoWindowVis=false;
+      this.setState({
+        targetMarker:null,
+        targetMarkerId:null,
+        targetMarkerInfo:null,
 
-
+      })
+    }
    this.setState((state) => {
-    return {activeLocation:state.UnfilteredLocation.filter((contact)=>match.setTargetMarker(contact.venue.name))};
+    return {activeLocation:retval};
   });
  }
 }
@@ -246,7 +267,7 @@ ShowInfoWindow=(props,marker,e)=>{
   //4. Address (good)
   //Make one more API call on clicked marker
 
-
+InfoWindowVis=true;
   var Active=this.state.activeLocation;
   var info={};
  for(var i=0;i<Active.length;i++){
@@ -262,25 +283,7 @@ ShowInfoWindow=(props,marker,e)=>{
 
 
 
-getMarkerInformation=()=>{
 
-  var id=this.state.targetMarkerId;
-
-  fetch('https://api.foursquare.com/v2/venues/'+id+'?'+'&oauth_token=20WP0A2F535WUKLRM524E1AZPED250DCPLHAOHIOWHTJ1U53&v=20180813' ,{
-
-    method:"GET",
-    dataType:"JSON"
-  }).then((resp)=>{
-     return resp.json()
-  }).then((data)=>{
-
-   this.setState({
-     targetMarkerInfo:data.response.venue
-   })
-  }).catch((error)=>{
-    console.log('Error')
-  })
-}
 
 
  GetMarkerObjects=(marker)=>{
@@ -293,10 +296,14 @@ getMarkerInformation=()=>{
 
 DisplayMarkers=()=>{
 
+
   var ListOfMarkers=[<Marker key={'home'} icon={home}position={{lat:this.state.lat,lng:this.state.lng}}/>];
    var active=this.state.activeLocation;
 
-  var target=this.state.targetMarker.name;
+  var target=null;
+  if(this.state.targetMarker){
+     target=this.state.targetMarker.name;
+  }
   var flag=0;
     for(var i=0;i<active.length;i++){
       if(target==active[i].venue.name){
@@ -317,6 +324,7 @@ DisplayMarkers=()=>{
 DisplayContact=()=>{
   if(this.state.targetMarkerId){
 
+    if(this.state.targetMarkerInfo){
     var contact=this.state.targetMarkerInfo.contact;
 
     var retval=[];
@@ -337,6 +345,7 @@ DisplayContact=()=>{
      </table>
     )
   }
+}
 }
 
 
@@ -376,13 +385,13 @@ DisplayContact=()=>{
 
 
      {/* Large InfoWindow which displays information about marker, on update of targetMarker */}
-      <InfoWindow   marker={this.state.targetMarker}  visible={true}>
+      <InfoWindow   marker={this.state.targetMarker}  visible={InfoWindowVis}>
    <div>
 
-    <h1> {this.state.targetMarker.name} </h1>
-  <h2>{this.state.targetMarkerInfo&&'rating '+this.state.targetMarkerInfo.rating}</h2>
-<h3>{this.state.targetMarkerInfo&&'Description '+this.state.targetMarkerInfo.description}</h3>
-{this.DisplayContact()}
+    <h1> {this.state.targetMarker&&this.state.targetMarker.name} </h1>
+  <h2>{this.state.targetMarker&&this.state.targetMarkerInfo&&'rating '+this.state.targetMarkerInfo.rating}</h2>
+<h3>{this.state.targetMarker&&this.state.targetMarkerInfo&&'Description '+this.state.targetMarkerInfo.description}</h3>
+{this.state.targetMarker&&this.DisplayContact()}
    </div>
 
       </InfoWindow>
