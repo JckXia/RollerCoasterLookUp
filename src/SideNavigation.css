@@ -84,3 +84,14 @@ position:absolute;
 .space{
   padding:15%;
 }
+
+@media screen and (max-width:600px){
+  .bm-burger-button {
+    position: fixed;
+    width: 25px;
+    height: 25px;
+    left: 20px;
+    top: 20px;
+  }
+
+}

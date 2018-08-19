@@ -292,7 +292,7 @@ InfoWindowVis=true;
      ListOfInfoWindow.push(marker.marker);
    }
 
-  //ListOfInfoWindow.push(marker.marker);
+ 
 }
 
 DisplayMarkers=()=>{
@@ -387,7 +387,7 @@ DisplayContact=()=>{
    {/* Header portion, where search bars is located */}
         <header className="App-header">
 
-          <span><span className="credit">Powered By React.js</span><img src={logo} className="App-logo" alt="logo" /></span>
+          <span ><span className="credit">Powered By React.js</span><img src={logo} className="App-logo" alt="logo" /></span>
         <h1 className="App-title">Find your ride!</h1>
       <SearchWithinTime Search={this.getData} />
         </header>
@@ -398,7 +398,7 @@ DisplayContact=()=>{
           lng:this.state.lng
         }}
 
-          zoom={15}>
+          zoom={10}>
 
 
        {this.DisplayMarkers()}
