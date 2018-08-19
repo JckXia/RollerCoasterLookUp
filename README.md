@@ -10,7 +10,11 @@ To get the app running:
 *   Install project dependencies with `npm install`
 *   start with  `npm run start`
 
-
+# Dependencies used:
+ * regexp
+ * google-maps-react
+ * React.js
+ * burger-react-menu
 
 
 ## Create React App
