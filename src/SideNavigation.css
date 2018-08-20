@@ -85,6 +85,9 @@ position:absolute;
   padding:15%;
 }
 
+.anchor{
+  color:white;
+}
 @media screen and (max-width:600px){
   .bm-burger-button {
     position: fixed;

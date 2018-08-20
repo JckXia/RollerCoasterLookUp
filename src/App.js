@@ -12,15 +12,15 @@ import './InfoWindow.css'
 var ListOfInfoWindow=[];
 var Mark=[];
 var InfoWindowVis=true;
+
 class App extends Component {
 
   state = {
         //InfoWindow visibility
-
         //Center of the map
        lat:  43.856098,
        lng:-79.337021,
-
+       SideNavOpen:false,
        //The marker that is being selected
        targetMarker:{},
        targetMarkerId:null,
@@ -50,15 +50,19 @@ setTargetMarker=(marker,id)=>{
     method:"GET",
     dataType:"JSON"
   }).then((resp)=>{
+
+    if(resp.status>=400&&resp.status<600){
+      throw new Error ('Bad response from server!');
+    }
      return resp.json()
   }).then((data)=>{
 
    this.setState({
      targetMarkerInfo:data.response.venue
    })
-  }).catch((error)=>{
-    console.log('Error')
-  })
+ }).catch(function(error) {
+      alert('Error!: '+error);
+    });
 }
 selectMarker=(e)=>{
   InfoWindowVis=true;
@@ -151,6 +155,9 @@ getData=()=>{
  method:"GET",
  dataType:"JSON"
 }).then((resp)=>{
+  if(resp.status>=400&&resp.status<600){
+    throw new Error ('Bad server response');
+  }
   return resp.json()
 }).then((data)=>{
 
@@ -162,7 +169,7 @@ getData=()=>{
   this.searchTime(origin);
 }
 }).catch((error)=>{
- console.log('Error! '+error);
+  alert('Error!: '+error)
 })
 
 }
@@ -292,7 +299,7 @@ InfoWindowVis=true;
      ListOfInfoWindow.push(marker.marker);
    }
 
- 
+
 }
 
 DisplayMarkers=()=>{
@@ -333,7 +340,7 @@ DisplayContact=()=>{
     var travelTime;
      for(var i=0;i<active.length;i++){
         if(active[i].venue.name==target.name){
-          console.log(active[i]);
+
           travelTime=active[i].travelTime;
         }
      }
@@ -369,19 +376,24 @@ DisplayContact=()=>{
 }
 
 
+OpenNav=()=>{
 
+  this.setState({SideNavOpen:true})
+}
 
 // Main rednering
   render() {
 
 
-   var searchAutoComplete=new this.props.google.maps.places.Autocomplete(document.getElementById('init-Location'));
+   //let searchAutoComplete=new this.props.google.maps.places.Autocomplete(document.getElementById('init-Location'));
     return (
       <div className="App">
 
+        <div id="SideNav">
+        {/* Side Navigation component */}
+        <SideNav stat={this.state.SideNavOpen} selection={(e)=>this.selectMarker(e)}   update={this.QueryUpdate} locations={this.state.activeLocation}/>
+       </div>
 
-     {/* Side Navigation component */}
-     <SideNav selection={(e)=>this.selectMarker(e)}   update={this.QueryUpdate} locations={this.state.activeLocation}/>
 
 
    {/* Header portion, where search bars is located */}
@@ -390,7 +402,9 @@ DisplayContact=()=>{
           <span ><span className="credit">Powered By React.js</span><img src={logo} className="App-logo" alt="logo" /></span>
         <h1 className="App-title">Find your ride!</h1>
       <SearchWithinTime Search={this.getData} />
-        </header>
+               <a onClick={()=>this.OpenNav()} className="skip-link" href="#SideNav">Skip!</a>
+       </header>
+
 
         <Map google={this.props.google}
             center={{
@@ -400,12 +414,11 @@ DisplayContact=()=>{
 
           zoom={10}>
 
-
        {this.DisplayMarkers()}
 
 
      {/* Large InfoWindow which displays information about marker, on update of targetMarker */}
-      <InfoWindow   marker={this.state.targetMarker}  visible={InfoWindowVis}>
+      <InfoWindow    marker={this.state.targetMarker}  visible={InfoWindowVis}>
    <div>
 
 {this.state.targetMarker&&this.DisplayContact()}
@@ -414,6 +427,7 @@ DisplayContact=()=>{
       </InfoWindow>
 
         </Map>
+
 
       </div>
     );
