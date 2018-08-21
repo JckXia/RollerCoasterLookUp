@@ -17,7 +17,7 @@ class SearchWithinTime extends React.Component{
                                             <option value="WALKING">walk</option>
                                             <option value="BICYCLING">Bike</option>
                                             <option value="TRANSIT">transit ride</option>
-                                        </select></span> of  <input type="text" id="init-Location"  placeholder="Ex:California"/>  <button type="button" onClick={this.props.Search}>Go!</button></span>
+                                        </select></span> of  <input role="Navigation" type="text" id="init-Location"  placeholder="Ex:California"/>  <button type="button" onClick={this.props.Search}>Go!</button></span>
       );
   }
 }

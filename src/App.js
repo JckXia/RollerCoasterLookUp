@@ -405,7 +405,7 @@ OpenNav=()=>{
                <a onClick={()=>this.OpenNav()} className="skip-link" href="#SideNav">Skip!</a>
        </header>
 
-
+     <map>
         <Map google={this.props.google}
             center={{
           lat:this.state.lat,
@@ -427,7 +427,7 @@ OpenNav=()=>{
       </InfoWindow>
 
         </Map>
-
+    </map>
 
       </div>
     );
